@@ -1,8 +1,8 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from pymongo import MongoClient
-from pymongo.collection import Collection
-from pymongo.database import Database
+# from pymongo import MongoClient
+# from pymongo.collection import Collection
+# from pymongo.database import Database
 import logging
 from pydantic_settings import BaseSettings
 from motor.motor_asyncio import AsyncIOMotorClient
@@ -39,7 +39,7 @@ class URLResponse(BaseModel):
 
 async def initMongo()-> Tuple[AsyncIOMotorDatabase, AsyncIOMotorCollection]:
     try:
-        client = AsyncIOMotorClient(settings.MONGODB_URL)
+        client = AsyncIOMotorClient(settings.MONGODB_CONTAINER_URL)
         db = client[settings.DATABASE_NAME]
         collection = db[settings.COLLECTION_NAME]
         
@@ -64,7 +64,8 @@ app = FastAPI(lifespan=lifecycle)
 
 # Configuration management
 class Settings(BaseSettings):
-    MONGODB_URL: str = "mongodb://localhost:27017"
+    MONGODB_LOCAL_URL: str = "mongodb://localhost:27017"
+    MONGODB_CONTAINER_URL: str = "mongodb://mongo:27017"
     DATABASE_NAME: str = "url_shortener_db"
     COLLECTION_NAME: str = "url_collection"
     ALLOWED_ORIGINS: list = [
@@ -111,17 +112,17 @@ chars = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
 
     
 # synchronous method    
-def initMongoClient():
-    db, collection = None, None
-    try:
-        mongo_client = MongoClient('mongodb://localhost:27017') # change as you deploy
-        db:Database = mongo_client['url_shortener_db']
-        collection: Collection = db['url_collection']
-    except Exception as e:
-        print(str(e))
-        print('Exiting...')
-        # exit()
-    return db, collection
+# def initMongoClient():
+#     db, collection = None, None
+#     try:
+#         mongo_client = MongoClient('mongodb://localhost:27017') # change as you deploy
+#         db:Database = mongo_client['url_shortener_db']
+#         collection: Collection = db['url_collection']
+#     except Exception as e:
+#         print(str(e))
+#         print('Exiting...')
+#         # exit()
+#     return db, collection
 
 
 @app.get("/")
@@ -181,5 +182,6 @@ async def decode(short_url: str):
 
 # 0.0.0.0 makes app accessible to any device on the network, otherwise 127.0.0.1 restricts to localhost
 if __name__ == "__main__":
-    uvicorn.run("fapp:app", host="localhost", port=5000, reload=True) # reload=True for auto-reload on code changes
+    # put 0.0.0.0 for docker
+    uvicorn.run("fapp:app", host="0.0.0.0", port=5000, reload=True) # reload=True for auto-reload on code changes
     # passed "fapp:app" as reload=True expects this format and "fapp" is the name of the file/module

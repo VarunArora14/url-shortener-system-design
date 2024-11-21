@@ -24,3 +24,9 @@
 - deploy to docker compose first or directly k8s
 - configure jenkinsfile for accordingly setup after the code is ready and working locally
 - document everything including the learnings of choices of DB and code
+
+---
+
+### For dockerfile
+
+We have 2 approaches, either setup db first on docker via docker compose or use local connectivity for docker to connect to localhost(only possible on linux using bridge network)
