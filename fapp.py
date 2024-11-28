@@ -1,3 +1,4 @@
+import os
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 # from pymongo import MongoClient
@@ -13,6 +14,7 @@ from random import randint
 from typing import Optional, Tuple
 from motor.motor_asyncio import AsyncIOMotorDatabase, AsyncIOMotorCollection
 from fastapi.responses import RedirectResponse
+from dotenv import load_dotenv
 
 
 '''
@@ -22,6 +24,8 @@ https://fastapi.tiangolo.com/advanced/events/#lifespan
 https://docs.pydantic.dev/latest/concepts/pydantic_settings/
 
 '''
+
+load_dotenv()
 
 
 class URLRequest(BaseModel):
@@ -39,7 +43,7 @@ class URLResponse(BaseModel):
 
 async def initMongo()-> Tuple[AsyncIOMotorDatabase, AsyncIOMotorCollection]:
     try:
-        client = AsyncIOMotorClient(settings.MONGODB_CONTAINER_URL)
+        client = AsyncIOMotorClient(settings.MONGODB_LOCAL_URL) if settings.IS_LOCAL else AsyncIOMotorClient(settings.MONGODB_CONTAINER_URL)
         db = client[settings.DATABASE_NAME]
         collection = db[settings.COLLECTION_NAME]
         
@@ -67,13 +71,17 @@ class Settings(BaseSettings):
     MONGODB_LOCAL_URL: str = "mongodb://localhost:27017"
     MONGODB_CONTAINER_URL: str = "mongodb://mongo:27017"
     DATABASE_NAME: str = "url_shortener_db"
+    LOCAL_APP_HOST: str = "localhost"
+    CONTAINER_APP_HOST: str = "0.0.0.0"
+    IS_LOCAL: bool = True
     COLLECTION_NAME: str = "url_collection"
     ALLOWED_ORIGINS: list = [
         "http://localhost:5000",
         "http://localhost:8000",
     ]
     
-settings = Settings()   
+settings = Settings() 
+settings.IS_LOCAL = os.getenv("IS_LOCAL", "True").lower() == "true" 
 
 # Configure logging
 logging.basicConfig(
@@ -131,7 +139,11 @@ async def root():
 
 @app.get("/health")
 async def health():
-    return {"message": "healthy"}
+    try:
+        await app.state.db.command("ping")
+        return {"status": "OK", "MongoDB Connection": "OK"}
+    except Exception as e:
+        return {"status": "Error", "MongoDB Connection": str(e)}
 
 @app.post("/api/encode", response_model=URLResponse)
 async def encode(request: URLRequest):
@@ -149,13 +161,26 @@ async def encode(request: URLRequest):
                 short_url = document["short_url"]
                 return URLResponse(short_url=short_url, long_url=long_url)
             else:
-                short_url=""
-                for _ in range(7):
-                    r = randint(0, len(chars)-1) # get the random index
-                    short_url+=chars[r]
+                suffix=""
+                short_url = ""
+                isValidShortUrl = False
+                max_retries=10
+                while not isValidShortUrl and max_retries>0:
+                    for _ in range(7):
+                        r = randint(0, len(chars)-1)
+                        suffix+=chars[r]
                     
-                short_url = "http://localhost:5000/" + short_url
+                    short_url = "http://localhost:5000/" + suffix
+                    check_query = {"short_url": short_url}
+                    count = await app.state.collection.count_documents(check_query)
+                    if count==0:
+                        isValidShortUrl = True
+                    else:
+                        print(f"Short url already exists for {long_url}. Generating a new one...")
+                    max_retries-=1
                 
+                if max_retries==0:
+                    raise Exception("Could not generate a unique short url after 10 retries")
                 # insert a new document
                 new_doc = {}
                 new_doc["long_url"] = long_url
@@ -180,8 +205,23 @@ async def decode(short_url: str):
     except Exception as e:
         return {"message": str(e)}
 
+@app.get("/api/list")
+async def list_all():
+    try:
+        cursor = app.state.collection.find({}, {"_id": 0})
+        documents = await cursor.to_list(length=1000)
+        if documents == []:
+            return {"message": "Empty collection"}
+        elif documents is None:
+            return {"message": "Collection not found"}
+        else:
+            return documents
+    except Exception as e:
+        return {"message": str(e)}
+
 # 0.0.0.0 makes app accessible to any device on the network, otherwise 127.0.0.1 restricts to localhost
 if __name__ == "__main__":
+    host = settings.LOCAL_APP_HOST if settings.IS_LOCAL else settings.CONTAINER_APP_HOST
     # put 0.0.0.0 for docker
-    uvicorn.run("fapp:app", host="0.0.0.0", port=5000, reload=True) # reload=True for auto-reload on code changes
+    uvicorn.run("fapp:app", host=host, port=5000, reload=True) # reload=True for auto-reload on code changes
     # passed "fapp:app" as reload=True expects this format and "fapp" is the name of the file/module
