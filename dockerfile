@@ -11,6 +11,8 @@ RUN apt-get -y update; apt-get -y install curl
 
 COPY fapp.py /app/
 
+COPY .env /app/
+
 EXPOSE 5000
 
 CMD ["python", "fapp.py"]

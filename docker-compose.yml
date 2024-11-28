@@ -10,10 +10,17 @@ services:
       - .:/code
     depends_on:
       - mongodb
+      - redis
   mongodb:
     image: mongo:latest
     container_name: mongo
     ports:
       - "27017:27017"
+  redis:
+    image: redis:latest
+    container_name: redis
+    ports:
+      - "6379:6379"
+    command: ["redis-server", "--maxmemory", "256mb", "--maxmemory-policy", "allkeys-lru"]
 # command - docker-compose up --build
 # Go inside the mongo container and run command `mongosh` and then `show dbs` to see the databases
