@@ -15,6 +15,7 @@ from typing import Optional, Tuple
 from motor.motor_asyncio import AsyncIOMotorDatabase, AsyncIOMotorCollection
 from fastapi.responses import RedirectResponse
 from dotenv import load_dotenv
+import redis.asyncio as redis
 
 
 '''
@@ -41,6 +42,16 @@ class URLResponse(BaseModel):
 # print(c.long_url)
 # print(str(c.long_url))
 
+async def async_get_redis_client():
+    try:
+        client = await redis.Redis(host="localhost", port=6379, decode_responses=True)
+        # Test the connection
+        await client.ping()
+        print("Connected to Redis!")
+        return client
+    except redis.RedisError as e:
+        print(f"Redis connection error: {e}")
+
 async def initMongo()-> Tuple[AsyncIOMotorDatabase, AsyncIOMotorCollection]:
     try:
         client = AsyncIOMotorClient(settings.MONGODB_LOCAL_URL) if settings.IS_LOCAL else AsyncIOMotorClient(settings.MONGODB_CONTAINER_URL)
@@ -59,8 +70,10 @@ async def initMongo()-> Tuple[AsyncIOMotorDatabase, AsyncIOMotorCollection]:
 @asynccontextmanager
 async def lifecycle(app: FastAPI):
     app.state.db, app.state.collection = await initMongo() # code before yield runs on startup
+    app.state.redis = await async_get_redis_client()
     yield # give control to fastapi (fastapi handles requests while the app is running)
     await app.state.db.client.close() # code after yield runs on shutdown (of fastapi server)
+    await app.state.redis.close()
 
 
 app = FastAPI(lifespan=lifecycle)
@@ -82,6 +95,7 @@ class Settings(BaseSettings):
     
 settings = Settings() 
 settings.IS_LOCAL = os.getenv("IS_LOCAL", "True").lower() == "true" 
+print(settings.IS_LOCAL)
 
 # Configure logging
 logging.basicConfig(
@@ -139,11 +153,18 @@ async def root():
 
 @app.get("/health")
 async def health():
+    redis_status = "OK"
+    mongo_status = "OK"
     try:
         await app.state.db.command("ping")
-        return {"status": "OK", "MongoDB Connection": "OK"}
     except Exception as e:
-        return {"status": "Error", "MongoDB Connection": str(e)}
+        mongo_status=str(e)
+    try:
+        await app.state.redis.ping()
+    except Exception as e:
+        redis_status=str(e)
+        
+    return {"status": "OK", "MongoDB Connection": mongo_status, "Redis Connection": redis_status}
 
 @app.post("/api/encode", response_model=URLResponse)
 async def encode(request: URLRequest):
@@ -218,6 +239,16 @@ async def list_all():
             return documents
     except Exception as e:
         return {"message": str(e)}
+
+@app.get("/api/redis/{key}")
+async def get_redis_key(key: str):
+    try:
+        value = await app.state.redis.get(key)
+        return {"key": key, "value": value}
+    except Exception as e:
+        return {"error": str(e)}
+    
+
 
 # 0.0.0.0 makes app accessible to any device on the network, otherwise 127.0.0.1 restricts to localhost
 if __name__ == "__main__":

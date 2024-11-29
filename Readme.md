@@ -26,3 +26,11 @@ System Design Choices -
 Other Implementation choices -
 
 - Use of **random code generator** over **hash + base64 encode** of url for short url creation has been done as if we use hash with encoding, while we get a unique id for each url, collision resolution for this won't be easy. It is better to generate random urls => check their occurence and then store them.
+
+Redis commands -
+
+- Inside redis docker container run command `redis-cli` to connect
+- Run command `ping` to confirm
+- Command `keys *` to get all keys
+- command `get <keyname>` to get the corresponding value of the `<keyname>`
+- command `set <k> <v>` to set key-value pairs
