@@ -26,6 +26,7 @@ System Design Choices -
 Other Implementation choices -
 
 - Use of **random code generator** over **hash + base64 encode** of url for short url creation has been done as if we use hash with encoding, while we get a unique id for each url, collision resolution for this won't be easy. It is better to generate random urls => check their occurence and then store them.
+- In redis fetch of all key-value pairs as part of API, I used `scan()` method and not `keys()` method as for a larger number of key-val pairs, the method blocks the server while the `scan()` method brings pagination giving few results at a time maintaining cursor position as well. Note that **cursor** is index to the iterator which scan command updates for subsequent calls (same as next page for pagination). The `scan` method works with user initialising `cursor` to 0 and ends when the server returns a cursor of 0. It works by updating cursor with each call and return to user for next iteration step. We use `scan_iter` abstraction by redis-py package that **abstratcs away cursor management and directly provides python iterator** for easier loops. This method is superior to `KEYS` which has blocking code and blocks IO operations till the processing is complete.
 
 Redis commands -
 

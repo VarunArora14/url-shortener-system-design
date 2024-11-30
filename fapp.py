@@ -240,11 +240,16 @@ async def list_all():
     except Exception as e:
         return {"message": str(e)}
 
-@app.get("/api/redis/{key}")
-async def get_redis_key(key: str):
+@app.get("/api/redis/list")
+async def get_all_redis_pairs(batch_size:int = 500):
+    pairs = {}
     try:
-        value = await app.state.redis.get(key)
-        return {"key": key, "value": value}
+        async for key in app.state.redis.scan_iter(match="*", count=batch_size):
+            v = await app.state.redis.get(key)
+            pairs[key] = v
+        return pairs
+    except redis.RedisError as e:
+        return {"Redis error": str(e)}
     except Exception as e:
         return {"error": str(e)}
     
