@@ -1,3 +1,7 @@
+### Docker Workflow Diagram
+
+![alt text](image.png)
+
 The code is for implementing a url shortener service with **async** API calls being used as well as **synchronous** code implementation as part of `synchronous_app/app.py`.
 
 The aim of this project is to implement and understand real world system design constraints and problems that we wish to solve.

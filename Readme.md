@@ -16,6 +16,10 @@ This is a FastAPI application that uses MongoDB and Redis for data storage and c
 - Motor (Async MongoDB driver)
 - redis (Redis client with async support)
 
+### Docker Workflow Diagram
+
+![alt text](image.png)
+
 ## Installation
 
 1. Clone the repository:
