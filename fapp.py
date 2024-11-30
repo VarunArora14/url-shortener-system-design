@@ -44,7 +44,7 @@ class URLResponse(BaseModel):
 
 async def async_get_redis_client():
     try:
-        client = await redis.Redis(host="localhost", port=6379, decode_responses=True)
+        client = await redis.Redis(host=settings.REDIS_LOCAL_HOST if settings.IS_LOCAL else settings.REDIS_CONTAINER_HOST, port=settings.REDIS_PORT, decode_responses=True)
         # Test the connection
         await client.ping()
         print("Connected to Redis!")
@@ -83,6 +83,9 @@ app = FastAPI(lifespan=lifecycle)
 class Settings(BaseSettings):
     MONGODB_LOCAL_URL: str = "mongodb://localhost:27017"
     MONGODB_CONTAINER_URL: str = "mongodb://mongo:27017"
+    REDIS_LOCAL_HOST: str = "localhost"
+    REDIS_CONTAINER_HOST: str = "redis"
+    REDIS_PORT: int = 6379
     DATABASE_NAME: str = "url_shortener_db"
     LOCAL_APP_HOST: str = "localhost"
     CONTAINER_APP_HOST: str = "0.0.0.0"

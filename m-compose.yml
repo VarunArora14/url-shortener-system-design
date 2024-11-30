@@ -1,0 +1,10 @@
+# MongoDB Docker Compose file with different host port (27018) than container port (27017)
+version: "3.8"
+
+services:
+  mongodb:
+    image: mongo:latest
+    container_name: mongo
+    ports:
+      - "27018:27017" # host:container
+# Run via `docker-compose -f m-compose.yml up --build`

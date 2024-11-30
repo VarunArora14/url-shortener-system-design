@@ -53,8 +53,10 @@ Redis commands -
 - command `get <keyname>` to get the corresponding value of the `<keyname>`
 - command `set <k> <v>` to set key-value pairs
 
-Additional things found with working with **uvicorn** -
+Additional things found as part of learning -
 
 - Run command `fastapi dev <app.py>` for running dev server when **uvicorn** server is not used
 - If uvicorn is being used, provide the name of the file which represents the app as `uvicorn.run("myapp:app",..)` where `myapp` is the `myapp.py` containing your code
 - If you have made code changes and your uvicorn server is not having those changes, go to your task manager or do `ls`(for linux) and find programs whose name have `python.exe` in them and do **end task** on them. For linux, kill their task PID by `taskkill /PID <PID> /F` (force kill pid)
+- If you have **MongoDB** running both locally and on docker at same port **27017** and have docker port exposed to same port as well, then if you make request to `127.0.0.1:27017` then the request will go to the **local DB** and NOT the docker container. In docker-compose in windows, it uses docker internal network for requests. For internal networking, the host url changes from **mongodb://localhost:27017** to **mongodb://mongo:27017** (mongo is the container name and so this host). Note - this is without the credentials which should be configured as well. For accessing the **container mongodb** from outside, change the **host-container** port mapping as `m-compose.yml` file.
+- For making requests to other containers running in same docker internal network, use their **container name as the hostname for automatic DNS resolution for container names**. If the container name is **mongo2** then conn url is `mongodb://mongo2:27017`. Similarly, if for redis the container name is **redis**, then it's conn url is `redis://redis:6379/0`. Refer to the format - `redis://[:password]@host:port[/db_number]`. For local redis, it will be `redis://localhost:6379/0`.

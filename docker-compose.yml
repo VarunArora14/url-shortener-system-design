@@ -24,3 +24,8 @@ services:
     command: ["redis-server", "--maxmemory", "256mb", "--maxmemory-policy", "allkeys-lru"]
 # command - docker-compose up --build
 # Go inside the mongo container and run command `mongosh` and then `show dbs` to see the databases
+# Go inside the redis container and run command `redis-cli` and then `keys *` to see the keys
+
+# Follow these every time you make changes to the code
+# docker-compose build --no-cache
+# docker-compose up -d

@@ -96,3 +96,14 @@ async def lifecycle(app: FastAPI):
 - `GET /{short_code}`: Endpoint to redirect to the long url. Since no DNS routes are setup, we use localhost routing with this `short_code` as the param
 - `GET /health` - Health endpoint of Redis and MongoDB connection
 - `GET /docs` - Swagger documentation of other list endpoints
+
+### Docker Compose
+
+Run commands in sequence -
+
+- `docker-compose build --no-cache`
+- `docker-compose up -d` (detach mode)
+
+### Populate the MongoDB with data
+
+Run file **url_post_req.py** to make post requests to populate the DB and check endpoints `/api/urls` for documents added.
