@@ -76,4 +76,4 @@ Additional things found as part of learning -
 
 ### Ideal URL Shortener System Design
 
-![alt text](image-1.png)
+![alt text](url-shortener-design.png)
