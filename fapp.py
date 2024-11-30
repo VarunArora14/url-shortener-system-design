@@ -207,16 +207,24 @@ async def encode(request: URLRequest):
         except Exception as e:
             return URLResponse(long_url=long_url, error_message=str(e))
 
-@app.get("/{short_url}")
-async def decode(short_url: str):
-    query = {"short_url": f"http://localhost:5000/{short_url}"}
+@app.get("/{short_code}")
+async def decode(short_code: str):
+    short_url = f"http://localhost:5000/{short_code}"
+    query = {"short_url": f"http://localhost:5000/{short_code}"}
     try:
-        document = await app.state.collection.find_one(query)
-        if document is not None:
-            long_url = document["long_url"]
+        # add redis check here
+        long_url = await app.state.redis.get(short_url)
+        if long_url is not None:
             return RedirectResponse(url=long_url)
         else:
-            return {"message": "No such short url found"}
+            print("cache miss")
+            document = await app.state.collection.find_one(query)
+            if document is not None:
+                long_url = document["long_url"]
+                await app.state.redis.set(short_url, long_url) # add key-value pair to redis
+                return RedirectResponse(url=long_url)
+            else:
+                return {"message": "No such short url found"}
     except Exception as e:
         return {"error": str(e)}
 
