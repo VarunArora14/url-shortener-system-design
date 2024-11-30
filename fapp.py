@@ -1,9 +1,6 @@
 import os
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-# from pymongo import MongoClient
-# from pymongo.collection import Collection
-# from pymongo.database import Database
 import logging
 from pydantic_settings import BaseSettings
 from motor.motor_asyncio import AsyncIOMotorClient
@@ -37,10 +34,6 @@ class URLResponse(BaseModel):
     long_url: str
     error_message:Optional[str]=None
 
-
-# c = URLRequest(long_url="https://www.google.com") # make sure to provide 'long_url=' else error
-# print(c.long_url)
-# print(str(c.long_url))
 
 async def async_get_redis_client():
     try:
@@ -130,19 +123,6 @@ app.add_middleware(
 
 chars = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
     
-# synchronous method    
-# def initMongoClient():
-#     db, collection = None, None
-#     try:
-#         mongo_client = MongoClient('mongodb://localhost:27017') # change as you deploy
-#         db:Database = mongo_client['url_shortener_db']
-#         collection: Collection = db['url_collection']
-#     except Exception as e:
-#         print(str(e))
-#         print('Exiting...')
-#         # exit()
-#     return db, collection
-
 
 @app.get("/")
 async def root():
