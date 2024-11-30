@@ -109,3 +109,7 @@ Run commands in sequence -
 ### Populate the MongoDB with data
 
 Run file **url_post_req.py** to make post requests to populate the DB and check endpoints `/api/urls` for documents added.
+
+### Understand More
+
+Refer to file **Notes.md** which includes the system design choices used to build this and ideal url shortener system in cluster setup.
