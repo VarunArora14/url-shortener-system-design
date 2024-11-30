@@ -64,3 +64,16 @@ Additional things found as part of learning -
 - If you have made code changes and your uvicorn server is not having those changes, go to your task manager or do `ls`(for linux) and find programs whose name have `python.exe` in them and do **end task** on them. For linux, kill their task PID by `taskkill /PID <PID> /F` (force kill pid)
 - If you have **MongoDB** running both locally and on docker at same port **27017** and have docker port exposed to same port as well, then if you make request to `127.0.0.1:27017` then the request will go to the **local DB** and NOT the docker container. In docker-compose in windows, it uses docker internal network for requests. For internal networking, the host url changes from **mongodb://localhost:27017** to **mongodb://mongo:27017** (mongo is the container name and so this host). Note - this is without the credentials which should be configured as well. For accessing the **container mongodb** from outside, change the **host-container** port mapping as `m-compose.yml` file.
 - For making requests to other containers running in same docker internal network, use their **container name as the hostname for automatic DNS resolution for container names**. If the container name is **mongo2** then conn url is `mongodb://mongo2:27017`. Similarly, if for redis the container name is **redis**, then it's conn url is `redis://redis:6379/0`. Refer to the format - `redis://[:password]@host:port[/db_number]`. For local redis, it will be `redis://localhost:6379/0`.
+
+### Potential Improvements to implementation
+
+- The `created_date`, `expiration_date` can be added to service to make the service handle expiries of urls.
+- The random short url generation can be replaced with KGS (Key Generation Service) which offline prepares a database of keys which are then used to create these short urls by taking that key. For concurrency, once key is taken, it should be marked to not be used. For multiple server scenarios, it can have 2 DBs (used and unused keys) and can transfer the key from used to unused as soon as the service gives key to one of the app servers. For a 6 character short code, the DB size will be `6 x 68.7B = 412 GB`.
+- We wil also need KGS in a cluster so if master fails then the replica becomes master as a standby/read replica is needed in case of failover.
+- We need to decide the cache size for redis, this can be around 20% of the daily traffic (assuming 80% of the traffic is by 20% of the urls) . Also, LRU key eviction strategy as used now should be decent.
+- We need LB for client to application server, application server to mongoDB, application server to redis. This can be easily done with setting them in cluster config in k8s and use round robin as default load balancing algo.
+- For purging or cleaning the expired urls, we can have functioanlity that if user clicks on expired url(having existing mapping in DB but expired) we return error of expiry and mark it expired (flag as part of db object or simply delete it). If we have a flag then we can run crons every x hours to delete all expired urls `current_time > expiry_time`. This handles cases when urls are expired but no one accesses them for a very long time without getting hits taking increasing space in DB.
+
+### Ideal URL Shortener System Design
+
+![alt text](image-1.png)
