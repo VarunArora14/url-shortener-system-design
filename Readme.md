@@ -14,7 +14,7 @@ This is a FastAPI application that uses MongoDB and Redis for data storage and c
 - Python 3.7+
 - FastAPI
 - Motor (Async MongoDB driver)
-- aioredis (Async Redis client)
+- redis (Redis client with async support)
 
 ## Installation
 
@@ -58,9 +58,7 @@ This will start the application in development mode with auto-reload enabled.
 
 ## Application Structure
 
--
-
-fapp.py
+- fapp.py
 
 : Main application file containing the FastAPI app and lifecycle management.
 
