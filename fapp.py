@@ -92,6 +92,10 @@ class Settings(BaseSettings):
         "http://localhost:5000",
         "http://localhost:8000",
     ]
+    class Config:
+        # Allow the environment variables to override the settings in the class
+        env_file = ".env"
+        env_file_encoding = "utf-8"
     
 settings = Settings() 
 settings.IS_LOCAL = os.getenv("IS_LOCAL", "True").lower() == "true" 
@@ -122,16 +126,6 @@ app.add_middleware(
 )
 
 chars = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
-
-# def initAsyncMongodb():
-#     client = AsyncIOMotorClient('mongodb://localhost:27017')
-#     db = client.url_shortener_db
-#     collection = db.url_collection
-#     return db, collection
-
-
-
-
     
 # synchronous method    
 # def initMongoClient():
@@ -224,10 +218,13 @@ async def decode(short_url: str):
         else:
             return {"message": "No such short url found"}
     except Exception as e:
-        return {"message": str(e)}
+        return {"error": str(e)}
 
-@app.get("/api/list")
-async def list_all():
+@app.get("/api/urls")
+async def list_urls():
+    """
+    Retrieve all documents from the MongoDB collection.
+    """
     try:
         cursor = app.state.collection.find({}, {"_id": 0})
         documents = await cursor.to_list(length=1000)
@@ -236,17 +233,27 @@ async def list_all():
         elif documents is None:
             return {"message": "Collection not found"}
         else:
-            return documents
+            return {"documents": documents}
     except Exception as e:
         return {"message": str(e)}
 
+
 @app.get("/api/redis/list")
-async def get_all_redis_pairs(batch_size:int = 500):
+async def get_all_redis_pairs(batch_size: int = 500):
+    """
+    Retrieve all key-value pairs from Redis in batches.
+
+    Args:
+        batch_size (int): The number of keys to retrieve in each batch. Default is 500.
+
+    Returns:
+        dict: A dictionary containing all key-value pairs from Redis.
+    """
     pairs = {}
     try:
         async for key in app.state.redis.scan_iter(match="*", count=batch_size):
-            v = await app.state.redis.get(key)
-            pairs[key] = v
+            value = await app.state.redis.get(key)
+            pairs[key] = value
         return pairs
     except redis.RedisError as e:
         return {"Redis error": str(e)}

@@ -1,37 +1,98 @@
-The code is for implementing a url shortener service with **async** API calls being used as well as **synchronous** code implementation as part of `tiny_url.py`.
+# URL Shortener Service
 
-The aim is to implement and understand real world system design constraints and problems that we wish to solve.
+This is a FastAPI application that uses MongoDB and Redis for data storage and caching. The application includes lifecycle management to handle the initialization and cleanup of these resources.
 
-In order to run the code via docker compose, run command `docker-compose up --build` to build the service and mongo container in same network.
+## Features
 
-For just running the app, run `python fapp.py`. Make sure than `IS_LOCAL` values is set to `True` in the `.env` file in the same folder directory as `fapp.py`
+- FastAPI for building the web application
+- MongoDB for data storage
+- Redis for caching
+- Lifecycle management for resource initialization and cleanup
 
-Important API endpoints:
+## Requirements
 
-- `/` - returns home page json
-- `/health` - health check of API and database
-- `/api/encode` - Post endpoint expecting data in format `{long_url: 'url'}`
-- `/{short_code}` - Redirects the existing site to the mapped url as in database.
-- `/api/list` - List all the url mappings of long to short urls
-- `/docs` - Swagger documentation of above APIs
+- Python 3.7+
+- FastAPI
+- Motor (Async MongoDB driver)
+- aioredis (Async Redis client)
 
-The way it works is that if my base url is `http://localhost:5000`, then I save the short url in format `http://localhost:5000/{short_code}` which then handles the routing to the actual mapped url.
+## Installation
 
-System Design Choices -
+1. Clone the repository:
 
-- **MongoDB** has been used as database to store long-short url mappings as it **scales out** via **horizontal scaling** and is much more resilient than SQL based databases especially during **high throughput**(NoSQL has much higher throughput while SQL has transactional accuracy). SQL databases will enncounter performance issues for large amount of data (non transactional) especially if need horizontal scaling. Vertical scaling will be much **more expensive** for large scale. Another reason is **high availability** of NoSQL databases via data replication and fault toleration via master-slave node cluster setup.
-- **Redis** is a great choice for storing most common urls as it can avoid DB searches for mappings of short urls. LRU or some other **key eviction policy** must be set with proper cluster/standalone config for cache eviction.
-- **FastAPI** as application server has been used to handle async requests with respective async libraries being used for handling large number of requests. This will be then deployed on k8s with with multiple instances (load balanced with `service` using round robin)
+```bash
+git clone https://github.com/VarunArora14/url-shortener-system-design.git
+cd url-shortener-system-design
+```
 
-Other Implementation choices -
+2. Create a virtual environment and activate it:
 
-- Use of **random code generator** over **hash + base64 encode** of url for short url creation has been done as if we use hash with encoding, while we get a unique id for each url, collision resolution for this won't be easy. It is better to generate random urls => check their occurence and then store them.
-- In redis fetch of all key-value pairs as part of API, I used `scan()` method and not `keys()` method as for a larger number of key-val pairs, the method blocks the server while the `scan()` method brings pagination giving few results at a time maintaining cursor position as well. Note that **cursor** is index to the iterator which scan command updates for subsequent calls (same as next page for pagination). The `scan` method works with user initialising `cursor` to 0 and ends when the server returns a cursor of 0. It works by updating cursor with each call and return to user for next iteration step. We use `scan_iter` abstraction by redis-py package that **abstratcs away cursor management and directly provides python iterator** for easier loops. This method is superior to `KEYS` which has blocking code and blocks IO operations till the processing is complete.
+```bash
+python -m venv venv
+source venv/bin/activate  # On Windows use `venv\Scripts\activate`
+```
 
-Redis commands -
+3. Install the dependencies:
 
-- Inside redis docker container run command `redis-cli` to connect
-- Run command `ping` to confirm
-- Command `keys *` to get all keys
-- command `get <keyname>` to get the corresponding value of the `<keyname>`
-- command `set <k> <v>` to set key-value pairs
+```bash
+pip install -r requirements.txt
+```
+
+## Configuration
+
+Ensure you have MongoDB and Redis running on your machine or accessible from your application. Update the connection details in your application code if necessary. For running redis via docker container, make sure the latest version of docker is installed and run the following command -
+
+```bash
+docker run -d --name redis -p 6379:6379 redis
+```
+
+## Running the Application
+
+To run the FastAPI application, use the following command:
+
+```bash
+uvicorn fapp:app --reload
+```
+
+This will start the application in development mode with auto-reload enabled.
+
+## Application Structure
+
+-
+
+fapp.py
+
+: Main application file containing the FastAPI app and lifecycle management.
+
+## Lifecycle Management
+
+The application uses an asynchronous context manager to handle the lifecycle of MongoDB and Redis connections. The
+
+lifecycle
+
+function initializes the connections on startup and closes them on shutdown.
+
+```python
+@asynccontextmanager
+async def lifecycle(app: FastAPI):
+    app.state.db, app.state.collection = await initMongo()  # Initialize MongoDB
+    app.state.redis = await async_get_redis_client()  # Initialize Redis
+    yield  # Hand control to FastAPI
+    await app.state.db.client.close()  # Close MongoDB connection
+    await app.state.redis.close()  # Close Redis connection
+```
+
+## Endpoints
+
+- `GET /`: Root endpoint that interacts with Redis.
+- `POST /api/encode`: Endpoint to shorten a URL. Expects a JSON body with a `long_url` field.
+
+```json
+{
+  "long_url": "https://example.com"
+}
+```
+
+- `GET /{short_code}`: Endpoint to redirect to the long url. Since no DNS routes are setup, we use localhost routing with this `short_code` as the param
+- `GET /health` - Health endpoint of Redis and MongoDB connection
+- `GET /docs` - Swagger documentation of other list endpoints
