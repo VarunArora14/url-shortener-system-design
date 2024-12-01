@@ -4,3 +4,4 @@ pydantic-settings
 uvicorn
 motor
 redis
+pytest
