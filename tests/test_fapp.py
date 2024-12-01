@@ -6,11 +6,13 @@ import redis.asyncio as redis
 import sys
 sys.path.append('../')
 from fapp import app, lifecycle
+import anyio
 
 # pytestmark = pytest.mark.anyio
 
 @pytest.fixture(scope="module")
 async def test_app():
+    # clean existing dependencies of mongodb and redis
     app.dependency_overrides = {}
     # Using async with for proper handling of the AsyncClient instance
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://localhost:5000") as ac:
@@ -59,16 +61,21 @@ async def test_get_non_existing_url(test_app, setup_test_db):
     assert response.status_code == 404
     assert response.json() == {"message": "No such short url found"}
 
-# @pytest.mark.asyncio
-# async def test_list_urls(test_app, setup_db):
-#     response = await test_app.get("/api/urls")
-#     assert response.status_code == 200
-#     assert response.json() == {"message": "Empty collection"}
+@pytest.mark.anyio
+async def test_list_urls(test_app, setup_test_db):
+    # await app.state.collection.delete_many({}) # remove all documents from the collection to test base cases
+    # not possible with trio tests as asyncio compatibility not out of the box (AsyncIOMotorClient used for DB)
+    
+    await anyio.to_thread.run_sync(lambda: anyio.from_thread.run(app.state.collection.delete_many, {}))
+    
+    response = await test_app.get("/api/urls")
+    assert response.status_code == 200
+    assert response.json() == {"message": "Empty collection"}
 
-#     long_url = "https://www.example.com"
-#     await test_app.post("/shorten", json={"long_url": long_url})
+    long_url = "https://www.example.com/"
+    await test_app.post("/api/encode", json={"long_url": long_url})
 
-#     response = await test_app.get("/api/urls")
-#     assert response.status_code == 200
-#     assert len(response.json()["documents"]) == 1
-#     assert response.json()["documents"][0]["long_url"] == long_url
+    response = await test_app.get("/api/urls")
+    assert response.status_code == 200
+    assert len(response.json()["documents"]) == 1
+    assert response.json()["documents"][0]["long_url"] == long_url

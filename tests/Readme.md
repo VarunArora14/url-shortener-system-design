@@ -1,5 +1,12 @@
 ### Testing Url Shortener Service
 
+### Prerequisites
+
+- If testing locally, ensure that MongoDB and Redis are running either in Docker or locally
+- Ensure the `.env` file contains `isLocal=True` (considering tests have localhost being used)
+- Start the app server by running `python fapp.py`
+- Perform a health check at the `/health` route to ensure that both databases do not display any error messages
+
 This project uses the **pytest** framework along with the **pytest-asyncio** plugin. The code -
 
 ```py
@@ -33,6 +40,7 @@ async def setup_test_db():
 We define test cases via `@pytest.mark.anyio`.
 
 We initialize the clients for each test (note that the fixtures themselves do not use **await**) and their implementation will consist of async-await methods.
+Note - The `test_app` and `setup_test_db` are the **pytest fixtures** to tear down resources for testing proving reusable code blocks and doing **dependency injection** in the below code block.
 
 ```py
 @pytest.mark.anyio
@@ -77,4 +85,6 @@ import sys
 sys.path.append('../')
 ```
 
-This modifies the python import path so python will look into that directory (parent in this case) when searching **modules** (fapp imported as module). This was done as the module or script is not in same folder but higher/lower in hierarchy
+This modifies the python import path so python will look into that directory (parent in this case) when searching **modules** (fapp imported as module). This was done as the module or script is not in same folder but higher/lower in hierarchy.
+
+**Running Tests** - Inside your terminal inside the **tests** folder, run command `pytest`
