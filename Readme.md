@@ -50,15 +50,15 @@ Ensure you have MongoDB and Redis running on your machine or accessible from you
 docker run -d --name redis -p 6379:6379 redis
 ```
 
-## Running the Application
+## Running the Application independently
 
 To run the FastAPI application, use the following command:
 
 ```bash
-uvicorn fapp:app --reload
+python fapp.py
 ```
 
-This will start the application in development mode with auto-reload enabled.
+This will start the application in development mode with auto-reload enabled. Make sure mongodb local client is running or run it via docker as well like redis.
 
 ## Application Structure
 
@@ -99,7 +99,7 @@ async def lifecycle(app: FastAPI):
 - `GET /health` - Health endpoint of Redis and MongoDB connection
 - `GET /docs` - Swagger documentation of other list endpoints
 
-### Docker Compose
+### Docker Compose for Entire Application
 
 Run commands in sequence -
 
