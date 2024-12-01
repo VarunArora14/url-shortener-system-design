@@ -15,6 +15,8 @@ This sets up an instance of your app. It overrides existing connections or exter
 
 **Important** - Setting `scope="module"` in the `@pytest.fixture` ensures that the event loop remains active for all test cases within the module. Without this, the event loop may end prematurely, causing errors. Using `scope="session"` resulted in errors, but setting it to `scope="module"` resolved the issue by keeping the event loop active until all tests in the module are completed.
 
+Note - The event loop scope for asynchronous fixtures will default to the fixture caching scope. Future versions of pytest-asyncio will default the loop scope for asynchronous fixtures to function scope. Set the default fixture loop scope explicitly in order to avoid unexpected behavior in the future. Valid fixture loop scopes are: "function", "class", "module", "package", "session"
+
 Then we create another fixture to setup DB for the app state -
 
 ```py

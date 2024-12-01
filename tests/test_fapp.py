@@ -1,5 +1,5 @@
 import pytest
-from httpx import AsyncClient
+from httpx import AsyncClient, ASGITransport
 from fastapi import FastAPI
 from motor.motor_asyncio import AsyncIOMotorClient
 import redis.asyncio as redis
@@ -13,7 +13,7 @@ from fapp import app, lifecycle
 async def test_app():
     app.dependency_overrides = {}
     # Using async with for proper handling of the AsyncClient instance
-    async with AsyncClient(app=app, base_url="http://localhost:5000") as ac:
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://localhost:5000") as ac:
         yield ac  # Yield the client to the test
 
 @pytest.fixture(scope="module")
@@ -24,7 +24,7 @@ async def setup_test_db():
     app.state.collection = app.state.db.test_collection
     app.state.redis = redis.from_url("redis://localhost:6379")
     yield
-    await app.state.redis.close() # async as it requires network calls and closing socket connections
+    await app.state.redis.aclose() # async as it requires network calls and closing socket connections
     app.state.client.close() # close method is synchornous for motor client
 
 @pytest.mark.anyio
@@ -53,11 +53,11 @@ async def test_set_and_get_url(test_app, setup_test_db):
     response = await test_app.get(f"/{short_url.split('/')[-1]}")
     assert response.status_code == 307 # redirect status code
 
-# @pytest.mark.asyncio
-# async def test_get_non_existing_url(test_app, setup_db):
-#     response = await test_app.get("/nonexisting")
-#     assert response.status_code == 404
-#     assert response.json() == {"message": "No such short url found"}
+@pytest.mark.anyio
+async def test_get_non_existing_url(test_app, setup_test_db):
+    response = await test_app.get("/nonexisting")
+    assert response.status_code == 404
+    assert response.json() == {"message": "No such short url found"}
 
 # @pytest.mark.asyncio
 # async def test_list_urls(test_app, setup_db):

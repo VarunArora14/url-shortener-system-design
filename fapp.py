@@ -13,6 +13,7 @@ from motor.motor_asyncio import AsyncIOMotorDatabase, AsyncIOMotorCollection
 from fastapi.responses import RedirectResponse
 from dotenv import load_dotenv
 import redis.asyncio as redis
+from fastapi.responses import JSONResponse
 
 
 '''
@@ -126,7 +127,7 @@ chars = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
 
 @app.get("/")
 async def root():
-    return {"message": "Home page"}
+    return JSONResponse(content={"message": "Home page"}, status_code=200)
 
 @app.get("/health")
 async def health():
@@ -140,8 +141,8 @@ async def health():
         await app.state.redis.ping()
     except Exception as e:
         redis_status=str(e)
-        
-    return {"status": "OK", "MongoDB Connection": mongo_status, "Redis Connection": redis_status}
+    
+    return JSONResponse(status_code=200, content={"status": "OK", "MongoDB Connection": mongo_status, "Redis Connection": redis_status})
 
 @app.post("/api/encode", response_model=URLResponse)
 async def encode(request: URLRequest):
@@ -207,26 +208,29 @@ async def decode(short_code: str):
                 await app.state.redis.set(short_url, long_url) # add key-value pair to redis
                 return RedirectResponse(url=long_url)
             else:
-                return {"message": "No such short url found"}
+                return JSONResponse(content={"message": "No such short url found"}, status_code=404)
     except Exception as e:
-        return {"error": str(e)}
+        return JSONResponse(content={"error": str(e)}, status_code=500)
 
 @app.get("/api/urls")
 async def list_urls():
     """
     Retrieve all documents from the MongoDB collection.
+
+    Returns:
+        JSONResponse: A JSON response containing the documents or an error message.
     """
     try:
         cursor = app.state.collection.find({}, {"_id": 0})
         documents = await cursor.to_list(length=1000)
         if documents == []:
-            return {"message": "Empty collection"}
+            return JSONResponse(content={"message": "Empty collection"}, status_code=200)
         elif documents is None:
-            return {"message": "Collection not found"}
+            return JSONResponse(content={"error": "No documents found"}, status_code=404)
         else:
-            return {"documents": documents}
+            return JSONResponse(content={"documents": documents}, status_code=200)
     except Exception as e:
-        return {"message": str(e)}
+        return JSONResponse(content={"error": str(e)}, status_code=500)
 
 
 @app.get("/api/redis/list")
