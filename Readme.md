@@ -55,7 +55,7 @@ docker run -d --name redis -p 6379:6379 redis
 To run the FastAPI application, use the following command:
 
 ```bash
-python fapp.py
+uvicorn fapp:app --port 5000
 ```
 
 This will start the application in development mode with auto-reload enabled. Make sure mongodb local client is running or run it via docker as well like redis.

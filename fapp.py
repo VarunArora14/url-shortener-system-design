@@ -38,7 +38,8 @@ class URLResponse(BaseModel):
 
 async def async_get_redis_client():
     try:
-        client = await redis.Redis(host=settings.REDIS_LOCAL_HOST if settings.IS_LOCAL else settings.REDIS_CONTAINER_HOST, port=settings.REDIS_PORT, decode_responses=True)
+        # client = await redis.Redis(host=settings.REDIS_LOCAL_HOST if settings.IS_LOCAL else settings.REDIS_CONTAINER_HOST, port=settings.REDIS_PORT, decode_responses=True)
+        client = await redis.Redis.from_url(settings.REDIS_LOCAL_URL if settings.IS_LOCAL else settings.REDIS_K8S_URL)
         # Test the connection
         await client.ping()
         print("Connected to Redis!")
@@ -77,9 +78,12 @@ app = FastAPI(lifespan=lifecycle)
 class Settings(BaseSettings):
     MONGODB_LOCAL_URL: str = "mongodb://localhost:27017"
     MONGODB_CONTAINER_URL: str = "mongodb://mongo:27017"
+    MONGODB_K8S_URL: str = "mongo.default.svc.cluster.local:27017"
+    REDIS_K8S_URL:str = "redis://redis.default.svc.cluster.local:6379"
     REDIS_LOCAL_HOST: str = "localhost"
     REDIS_CONTAINER_HOST: str = "redis"
-    REDIS_PORT: int = 6379
+    REDIS_LOCAL_URL:str = "redis://localhost:6379"
+    # REDIS_PORT: int = 6379 # some problem with int passing in k8s
     DATABASE_NAME: str = "url_shortener_db"
     LOCAL_APP_HOST: str = "localhost"
     CONTAINER_APP_HOST: str = "0.0.0.0"
@@ -93,8 +97,10 @@ class Settings(BaseSettings):
         # Allow the environment variables to override the settings in the class
         env_file = ".env"
         env_file_encoding = "utf-8"
-    
+
+# print(Settings())    
 settings = Settings() 
+
 settings.IS_LOCAL = os.getenv("IS_LOCAL", "True").lower() == "true" 
 print(settings.IS_LOCAL)
 
@@ -199,6 +205,8 @@ async def decode(short_code: str):
         # add redis check here
         long_url = await app.state.redis.get(short_url)
         if long_url is not None:
+            # redis problem with bytes when you access the cached url, it redirects to wrong url which needs decoding first
+            long_url = long_url.decode("utf-8") # convert bytes to string as after cache the url is stored as bytes like b'https://minikube.sigs.k8s.io/docs/handbook/accessing/'
             return RedirectResponse(url=long_url)
         else:
             print("cache miss")

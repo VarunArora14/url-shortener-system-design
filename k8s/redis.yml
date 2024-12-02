@@ -1,0 +1,31 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: redis
+  labels:
+    app: redis
+spec:
+  containers:
+    - name: redis
+      image: redis:latest # Replace with the desired Redis version
+      ports:
+        - containerPort: 6379
+  #     volumeMounts:
+  #       - name: redis-data
+  #         mountPath: /data
+  # volumes:
+  #   - name: redis-data
+  #     emptyDir: {}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: redis
+spec:
+  selector:
+    app: redis
+  ports:
+    - protocol: TCP
+      port: 6379
+      targetPort: 6379
+  # clusterIP: None # Enables pod-to-pod communication directly
