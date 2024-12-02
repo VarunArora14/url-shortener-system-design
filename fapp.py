@@ -38,7 +38,6 @@ class URLResponse(BaseModel):
 
 async def async_get_redis_client():
     try:
-        # client = await redis.Redis(host=settings.REDIS_LOCAL_HOST if settings.IS_LOCAL else settings.REDIS_CONTAINER_HOST, port=settings.REDIS_PORT, decode_responses=True)
         client = await redis.Redis.from_url(settings.REDIS_LOCAL_URL if settings.IS_LOCAL else settings.REDIS_K8S_URL)
         # Test the connection
         await client.ping()
@@ -83,7 +82,7 @@ class Settings(BaseSettings):
     REDIS_LOCAL_HOST: str = "localhost"
     REDIS_CONTAINER_HOST: str = "redis"
     REDIS_LOCAL_URL:str = "redis://localhost:6379"
-    # REDIS_PORT: int = 6379 # some problem with int passing in k8s
+    # REDIS_PORT: int = 6379 # some problem with int passing in k8s where it considers it as string of tcp port with internal IP
     DATABASE_NAME: str = "url_shortener_db"
     LOCAL_APP_HOST: str = "localhost"
     CONTAINER_APP_HOST: str = "0.0.0.0"

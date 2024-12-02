@@ -114,6 +114,8 @@ Note - The `REDIS_PORT` variable being int was somehow being represented as `tcp
 - Run command `minikube tunnel` to access it via localhost. If it does not do DNS resolution by any reason, instead **port forward the app service to port you want** via `kubectl port-forward svc/<service_name> <host_port>:<service_port>` leading to `kubectl port-forward svc/url-shortener 5000:5000`
 - Check the functionality to be same as it worked in locally with all APIs working as expected
 
+Note - On deploying services, **ClusterIP** is the **default type** and you can change this to **NodePort** or **LoadBalancer** as well.
+
 ### Next Steps
 
 - Replicaset for **mongodb** and **redis**

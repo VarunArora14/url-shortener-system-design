@@ -7,7 +7,7 @@ metadata:
 spec:
   containers:
     - name: redis
-      image: redis:latest # Replace with the desired Redis version
+      image: redis:latest
       ports:
         - containerPort: 6379
   #     volumeMounts:
@@ -28,4 +28,3 @@ spec:
     - protocol: TCP
       port: 6379
       targetPort: 6379
-  # clusterIP: None # Enables pod-to-pod communication directly

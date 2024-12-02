@@ -7,7 +7,7 @@ metadata:
 spec:
   containers:
     - name: mongo
-      image: mongo:latest # Replace with the desired MongoDB version
+      image: mongo:latest
       ports:
         - containerPort: 27017
   #     volumeMounts:
@@ -28,4 +28,3 @@ spec:
     - protocol: TCP
       port: 27017
       targetPort: 27017
-  # clusterIP: None # Enables pod-to-pod communication directly
