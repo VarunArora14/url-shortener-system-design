@@ -113,3 +113,16 @@ Run file **url_post_req.py** to make post requests to populate the DB and check 
 ### Understand More
 
 Refer to file **Notes.md** which includes the system design choices used to build this and ideal url shortener system in cluster setup.
+
+### Learning
+
+- Learnt development of **Async** applications in FastAPI
+- Learnt **pydantic validation** along with best API practices
+- Implemented **MongoDB** as NoSQL database and **Redis** as cache
+- Built docker images for the service with best practices config and **docker-compose** for containerizing the application and database in same docker network
+- Deployed application on kubernetes using YAML files with **services** as load balancer and **ingress** on **minikube** and used internal networking via FQDN urls and understood **stateless** application working
+- Configured proper **deployment**, **service**, **ingress**, **horizontal pod autoscaler** for app along with **ingress controller**.
+- Learnt **StatefulSets** for databases and other important kubernetes concepts like **Persistent Volumes** and **Persistent Volume Claims**
+- Learnt best practices for configuration, uvicorn server and kubernetes
+- Wrote tests for the app for local development via **pytest** and learnt **fixtures**, **anyio** package working and testing the core functionalities of the application
+- Learnt system design principles of scalability for both application and database

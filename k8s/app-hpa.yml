@@ -1,0 +1,27 @@
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: url-shortener-hpa
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: url-shortener
+  minReplicas: 2 # will set the minimum number of replicas to 2 even if the CPU usage is low or existing app.yml has 1 replica
+  maxReplicas: 10
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: 50 # Scale out if CPU usage exceeds 50%
+    - type: Resource
+      resource:
+        name: memory
+        target:
+          type: Utilization
+          averageUtilization: 70 # Scale out if memory usage exceeds 70%
+
+# Install the metrics server first as HPA relies on it. Command - kubectl apply -f https://github.com/kubernetes-sigs/metrics-server/releases/latest/download/components.yaml
+# Apply the HPA configuration - kubectl apply -f app-hpa.yml
