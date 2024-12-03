@@ -126,3 +126,8 @@ Refer to file **Notes.md** which includes the system design choices used to buil
 - Learnt best practices for configuration, uvicorn server and kubernetes
 - Wrote tests for the app for local development via **pytest** and learnt **fixtures**, **anyio** package working and testing the core functionalities of the application
 - Learnt system design principles of scalability for both application and database
+
+I have created blog post on building this whole system from scratch with steps followed as below
+
+- **Part 1** - https://varunarora14.github.io/posts/url_shortener_system_design_implemented/
+- **Part 2** - https://varunarora14.github.io/posts/url_shortener_system_design_implemented_pt2/
