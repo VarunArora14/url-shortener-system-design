@@ -1,4 +1,4 @@
-# URL Shortener Service
+# URL Shortener System
 
 This is a FastAPI application that uses MongoDB and Redis for data storage and caching. The application includes lifecycle management to handle the initialization and cleanup of these resources.
 
