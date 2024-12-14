@@ -58,6 +58,16 @@ To run the FastAPI application, use the following command:
 uvicorn fapp:app --port 5000
 ```
 
+## Github Actions CI pipeline setup
+
+For CI pipeline, you need to add **secrets** to the repo after forking it.
+
+- Fork the repo and go to **settings** of the repository
+- Go to **Security** and then click on **Actions**
+- On the **Secrets** tab, click on button **New repository secret** and add the variable name and their values
+- Check the file `ci.yml` in .github folder and make sure your expected branch and docker image name and tag are set
+- Push a commit to code to run the CI pipeline
+
 This will start the application in development mode with auto-reload enabled. Make sure mongodb local client is running or run it via docker as well like redis.
 
 ## Application Structure
