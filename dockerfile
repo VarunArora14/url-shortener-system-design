@@ -15,7 +15,7 @@ COPY fapp.py /app/
 
 EXPOSE 5000
 
-ENV IS_LOCAL=False
+ENV LOCAL=False
 
 CMD ["uvicorn", "fapp:app", "--host", "0.0.0.0", "--port", "5000"]
 

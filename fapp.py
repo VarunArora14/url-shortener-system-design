@@ -14,7 +14,7 @@ from fastapi.responses import RedirectResponse
 from dotenv import load_dotenv
 import redis.asyncio as redis
 from fastapi.responses import JSONResponse
-
+import hashlib
 
 '''
 References for implementation in FastAPI: 
@@ -38,17 +38,17 @@ class URLResponse(BaseModel):
 
 async def async_get_redis_client():
     try:
-        client = await redis.Redis.from_url(settings.REDIS_LOCAL_URL if settings.IS_LOCAL else settings.REDIS_K8S_URL)
+        client = await redis.Redis.from_url(settings.REDIS_LOCAL_URL if settings.LOCAL else settings.REDIS_K8S_URL)
         # Test the connection
         await client.ping()
-        print("Connected to Redis!")
+        logger.info("Connected to Redis!")
         return client
     except redis.RedisError as e:
-        print(f"Redis connection error: {e}")
+        logger.info(f"Redis connection error: {e}")
 
 async def initMongo()-> Tuple[AsyncIOMotorDatabase, AsyncIOMotorCollection]:
     try:
-        client = AsyncIOMotorClient(settings.MONGODB_LOCAL_URL) if settings.IS_LOCAL else AsyncIOMotorClient(settings.MONGODB_CONTAINER_URL)
+        client = AsyncIOMotorClient(settings.MONGODB_LOCAL_URL) if settings.LOCAL else AsyncIOMotorClient(settings.MONGODB_CONTAINER_URL)
         db = client[settings.DATABASE_NAME]
         collection = db[settings.COLLECTION_NAME]
         
@@ -86,7 +86,7 @@ class Settings(BaseSettings):
     DATABASE_NAME: str = "url_shortener_db"
     LOCAL_APP_HOST: str = "localhost"
     CONTAINER_APP_HOST: str = "0.0.0.0"
-    IS_LOCAL: bool = True
+    LOCAL: bool = True
     COLLECTION_NAME: str = "url_collection"
     ALLOWED_ORIGINS: list = [
         "http://localhost:5000",
@@ -97,11 +97,13 @@ class Settings(BaseSettings):
         env_file = ".env"
         env_file_encoding = "utf-8"
 
-# print(Settings())    
+print(Settings())    
 settings = Settings() 
 
-settings.IS_LOCAL = os.getenv("IS_LOCAL", "True").lower() == "true" 
-print(settings.IS_LOCAL)
+print(os.getenv("LOCAL", "True"))
+print(os)
+settings.LOCAL = os.getenv("LOCAL", "True").lower() == "true" 
+print(settings.LOCAL)
 
 # Configure logging
 logging.basicConfig(
@@ -149,6 +151,16 @@ async def health():
     
     return JSONResponse(status_code=200, content={"status": "OK", "MongoDB Connection": mongo_status, "Redis Connection": redis_status})
 
+
+def shorten_url(original_url):
+    hash_object = hashlib.sha256(original_url.encode())
+    hashed_url = hash_object.hexdigest()
+    short_hash = hashed_url[:8] 
+    
+    short_url = f"http://localhost:5000/{short_hash}"
+    
+    return short_url
+
 @app.post("/api/encode", response_model=URLResponse)
 async def encode(request: URLRequest):
     if app.state.db is None or app.state.collection is None:
@@ -159,28 +171,35 @@ async def encode(request: URLRequest):
         query = {"long_url": long_url}
         try:
             count  = await app.state.collection.count_documents(query)
+            count=0
             if count>0:
                 logger.info(f"Long url already exists in DB")
                 document = await app.state.collection.find_one(query)
                 short_url = document["short_url"]
                 return URLResponse(short_url=short_url, long_url=long_url)
             else:
-                suffix=""
+                # suffix=""
                 short_url = ""
                 isValidShortUrl = False
-                max_retries=10
+                max_retries=5
+                counter=1
+                new_url = long_url
                 while not isValidShortUrl and max_retries>0:
-                    for _ in range(7):
-                        r = randint(0, len(chars)-1)
-                        suffix+=chars[r]
+                    short_url = shorten_url(new_url)
+                    # for _ in range(7):
+                    #     r = randint(0, len(chars)-1)
+                    #     suffix+=chars[r]
                     
-                    short_url = "http://localhost:5000/" + suffix
+                    # short_url = "http://localhost:5000/" + suffix
                     check_query = {"short_url": short_url}
                     count = await app.state.collection.count_documents(check_query)
                     if count==0:
                         isValidShortUrl = True
                     else:
-                        print(f"Short url already exists for {long_url}. Generating a new one...")
+                        logger.info(f"Short url already exists for {long_url}. Generating a new one...")
+                    
+                    new_url = new_url + f"_{counter}" # modify url for collision
+                    counter+=1
                     max_retries-=1
                 
                 if max_retries==0:
@@ -208,7 +227,7 @@ async def decode(short_code: str):
             long_url = long_url.decode("utf-8") # convert bytes to string as after cache the url is stored as bytes like b'https://minikube.sigs.k8s.io/docs/handbook/accessing/'
             return RedirectResponse(url=long_url)
         else:
-            print("cache miss")
+            logger.info("cache miss")
             document = await app.state.collection.find_one(query)
             if document is not None:
                 long_url = document["long_url"]
@@ -266,7 +285,7 @@ async def get_all_redis_pairs(batch_size: int = 500):
 
 # 0.0.0.0 makes app accessible to any device on the network, otherwise 127.0.0.1 restricts to localhost
 if __name__ == "__main__":
-    host = settings.LOCAL_APP_HOST if settings.IS_LOCAL else settings.CONTAINER_APP_HOST
+    host = settings.LOCAL_APP_HOST if settings.LOCAL else settings.CONTAINER_APP_HOST
     # put 0.0.0.0 for docker
     uvicorn.run("fapp:app", host=host, port=5000, reload=True) # reload=True for auto-reload on code changes
     # passed "fapp:app" as reload=True expects this format and "fapp" is the name of the file/module
