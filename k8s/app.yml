@@ -16,7 +16,7 @@ spec:
     spec:
       containers:
         - name: url-shortener
-          image: rdxdocker14/url-shortener:v6
+          image: rdxdocker14/url-shortener:latest
           ports:
             - containerPort: 5000
           resources:

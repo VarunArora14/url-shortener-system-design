@@ -171,14 +171,13 @@ async def encode(request: URLRequest):
         query = {"long_url": long_url}
         try:
             count  = await app.state.collection.count_documents(query)
-            count=0
+            # count=0 # uncomment to check collision match
             if count>0:
                 logger.info(f"Long url already exists in DB")
                 document = await app.state.collection.find_one(query)
                 short_url = document["short_url"]
                 return URLResponse(short_url=short_url, long_url=long_url)
             else:
-                # suffix=""
                 short_url = ""
                 isValidShortUrl = False
                 max_retries=5
@@ -186,11 +185,6 @@ async def encode(request: URLRequest):
                 new_url = long_url
                 while not isValidShortUrl and max_retries>0:
                     short_url = shorten_url(new_url)
-                    # for _ in range(7):
-                    #     r = randint(0, len(chars)-1)
-                    #     suffix+=chars[r]
-                    
-                    # short_url = "http://localhost:5000/" + suffix
                     check_query = {"short_url": short_url}
                     count = await app.state.collection.count_documents(check_query)
                     if count==0:
