@@ -5,7 +5,7 @@ metadata:
   labels:
     app: url-shortener # should match the label in containers name
 spec:
-  replicas: 1
+  replicas: 3
   selector:
     matchLabels:
       app: url-shortener

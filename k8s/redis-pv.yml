@@ -18,7 +18,7 @@ metadata:
   name: redis
 spec:
   serviceName: "redis"
-  replicas: 1 # Set to the desired number of replicas
+  replicas: 1 # Set to 1 unless you need a replica set
   selector:
     matchLabels:
       app: redis
